@@ -350,6 +350,30 @@
       </div>
 
       <!-- === ESTADO ERROR: Datos invalidos === -->
+      <div class="state-message" id="state-paid">
+        <div class="state-icon" style="background:rgba(34,197,94,0.1)">
+          <svg viewBox="0 0 24 24" stroke="#22c55e">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <h2>RESERVA YA PAGADA</h2>
+        <p>Esta reserva ya fue pagada exitosamente. No es necesario realizar otro pago.</p>
+        <p style="margin-top:16px"><a href="https://isotermacero.cl">Volver a isotermacero.cl</a></p>
+      </div>
+
+      <div class="state-message" id="state-blocked">
+        <div class="state-icon" style="background:rgba(239,68,68,0.1)">
+          <svg viewBox="0 0 24 24" stroke="#ef4444">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+        </div>
+        <h2>INTENTOS AGOTADOS</h2>
+        <p>Se han agotado los 3 intentos de pago para esta reserva. Por favor contacta a Isoterma Cero para generar una nueva reserva.</p>
+        <p style="margin-top:16px"><a href="https://isotermacero.cl">Volver a isotermacero.cl</a></p>
+      </div>
+
       <div class="state-message" id="state-error">
         <div class="state-icon" style="background:rgba(239,68,68,0.1)">
           <svg viewBox="0 0 24 24" stroke="#ef4444">
@@ -382,7 +406,7 @@
     // CONFIGURACION
     // Cambia esta URL por la URL real de tu webhook en n8n
     // =====================================================
-    var N8N_WEBHOOK_URL = 'https://sdonoso.app.n8n.cloud/webhook/crear-transaccion-landing';
+    var N8N_WEBHOOK_URL = 'https://TU-INSTANCIA.app.n8n.cloud/webhook/crear-transaccion-landing';
 
     // Tiempo maximo de vida del link en horas
     var EXPIRACION_HORAS = 24;
@@ -409,7 +433,7 @@
     }
 
     function mostrarEstado(estadoId) {
-      var estados = ['state-normal', 'state-expired', 'state-error', 'state-redirect'];
+      var estados = ['state-normal', 'state-expired', 'state-error', 'state-redirect', 'state-paid', 'state-blocked'];
       for (var i = 0; i < estados.length; i++) {
         var el = document.getElementById(estados[i]);
         if (el) {
@@ -496,9 +520,17 @@
           var errorData = {};
           try { errorData = await response.json(); } catch(e) {}
 
-          // Si n8n devuelve que esta expirado
+          // Manejar los distintos errores del servidor
           if (errorData.error === 'EXPIRED') {
             mostrarEstado('state-expired');
+            return;
+          }
+          if (errorData.error === 'ALREADY_PAID') {
+            mostrarEstado('state-paid');
+            return;
+          }
+          if (errorData.error === 'MAX_ATTEMPTS') {
+            mostrarEstado('state-blocked');
             return;
           }
           throw new Error('Error del servidor: ' + response.status);
